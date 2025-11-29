@@ -144,10 +144,10 @@
 <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0"
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
   }
 }
 </script>
@@ -388,12 +388,6 @@
         const CHAT_WEBHOOK_URL = 'https://venture-os.app.n8n.cloud/webhook/bc8bdccb-8d02-4f6a-b634-e867ea619fdce';
         const VALID_KEY = 'LAUNCH-2025';
 
-        // Mock Data for Fallback
-        const DEMO_DATA = {
-            project_name: "Demo Project (Simulation Mode)",
-            business_plan: "This is a simulated business plan generated because the AI backend is currently busy or offline.\n\n1. Executive Summary\nThe system has switched to Simulation Mode. You can still use the Builder and Strategist tools to refine your idea locally.\n\n2. Market Analysis\nThe target market consists of startup founders looking for rapid prototyping tools. We estimate a TAM of $2B with a SAM of $500M."
-        };
-
         let currentView = 'lobby';
 
         // Init
@@ -421,10 +415,11 @@
             const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s Timeout
 
             try {
+                // IMPORTANT: Payload wrapped in "body" object as requested
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idea: input }),
+                    body: JSON.stringify({ body: { idea: input } }),
                     signal: controller.signal
                 });
 
@@ -437,17 +432,10 @@
                 unlockDashboard();
 
             } catch (error) {
-                console.warn("API Connection Issue:", error);
+                console.error("API Connection Issue:", error);
                 
-                // Fallback to Demo Data so user isn't stuck
-                const fallbackData = {
-                    ...DEMO_DATA, 
-                    project_name: input.split(' ').slice(0,3).join(' ') || "New Venture"
-                };
-                localStorage.setItem('venture_data', JSON.stringify(fallbackData));
-                
-                alert("Network busy (or Offline). Switched to Offline Demo Mode so you can continue building.");
-                unlockDashboard();
+                // NO SIMULATION FALLBACK. Strictly report error.
+                alert("Server Error: " + error.message);
 
             } finally {
                 clearTimeout(timeoutId);
@@ -515,17 +503,8 @@
 
             } catch (e) {
                 console.error("Chat Error:", e);
-                
-                // --- FALLBACK SIMULATION FOR CHAT ---
-                // If CORS blocks the request or server errors, simulate success locally
-                // so the user experience isn't broken.
-                setTimeout(() => {
-                    const simulatedResponse = {
-                        updated_text: currentView === 'strategist' ? 
-                            document.getElementById('doc-content').innerText + `\n\n[AI ADDITION]: ${cmd} has been incorporated into the strategy.` : null
-                    };
-                    processChatResponse(simulatedResponse, cmd);
-                }, 1000);
+                // NO SIMULATION FALLBACK. Alert error.
+                alert("Chat Error: " + e.message);
             } finally {
                 loader.classList.add('hidden');
                 inputEl.disabled = false;
@@ -538,7 +517,7 @@
             const status = document.getElementById('system-status');
 
             if (currentView === 'builder') {
-                // Visual simulation for builder
+                // Visual updates for builder (if backend returns specific instructions)
                 if (cmd.toLowerCase().includes('red')) {
                     document.getElementById('preview-button').classList.replace('bg-cyan-500', 'bg-red-500');
                     document.getElementById('preview-header').classList.replace('bg-cyan-600', 'bg-red-600');
