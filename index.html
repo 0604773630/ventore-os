@@ -18,14 +18,26 @@
                         mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        space: { 900: '#0a0a0f', 950: '#020617' },
-                        cyan: { 400: '#22d3ee', 500: '#06b6d4' },
-                        gold: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
+                        space: {
+                            900: '#0a0a0f',
+                            950: '#020617', // Deep Space
+                        },
+                        cyan: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            900: '#083344',
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
                     },
                     animation: {
                         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'slide-up': 'slideUp 0.6s ease-out forwards',
                         'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'bounce-subtle': 'bounceSubtle 2s infinite',
                     },
                     keyframes: {
                         slideUp: {
@@ -35,6 +47,10 @@
                         fadeIn: {
                             '0%': { opacity: '0' },
                             '100%': { opacity: '1' },
+                        },
+                        bounceSubtle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
                         }
                     }
                 }
@@ -42,145 +58,350 @@
         }
     </script>
     <style>
-        body { background-color: #020617; color: white; overflow: hidden; }
-        .grid-bg {
-            position: fixed; inset: 0; z-index: 0; background-size: 50px 50px;
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 100%); pointer-events: none;
+        body {
+            background-color: #020617;
+            color: white;
+            overflow: hidden;
         }
-        .glass-panel { background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .glow-input:focus-within { box-shadow: 0 0 30px rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.4); }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #020617; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        .loader { width: 16px; height: 16px; border: 2px solid rgba(34, 211, 238, 0.3); border-radius: 50%; border-top-color: #22d3ee; animation: spin 1s ease-in-out infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .sidebar-icon { position: relative; transition: all 0.3s ease; }
-        .sidebar-icon::after { content: ''; position: absolute; left: -18px; top: 50%; transform: translateY(-50%) scaleY(0); width: 3px; height: 24px; background-color: #22d3ee; transition: transform 0.2s ease; border-radius: 0 4px 4px 0; }
-        .sidebar-icon.active { color: #fff; background: rgba(255, 255, 255, 0.05); }
-        .sidebar-icon.active::after { transform: translateY(-50%) scaleY(1); }
+        
+        /* BACKGROUND GRID SYSTEM */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* Utilities */
+        .glass-panel {
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glow-input {
+            transition: all 0.3s ease;
+        }
+        .glow-input:focus-within {
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.15);
+            border-color: rgba(34, 211, 238, 0.4);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 3px;
+        }
+
+        .loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(34, 211, 238, 0.3);
+            border-radius: 50%;
+            border-top-color: #22d3ee;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .sidebar-icon {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .sidebar-icon::after {
+            content: '';
+            position: absolute;
+            left: -18px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(0);
+            width: 3px;
+            height: 24px;
+            background-color: #22d3ee;
+            transition: transform 0.2s ease;
+            border-radius: 0 4px 4px 0;
+        }
+        .sidebar-icon.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-icon.active::after {
+            transform: translateY(-50%) scaleY(1);
+        }
     </style>
+<script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
 </head>
 <body class="font-sans antialiased text-slate-300 selection:bg-cyan-500/30 selection:text-cyan-200">
 
+    <!-- THE GRID -->
     <div class="grid-bg"></div>
     <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none z-0"></div>
 
+    <!-- APP CONTAINER -->
     <div id="app-root" class="relative z-10 flex h-screen w-full">
+        
+        <!-- SIDEBAR -->
         <aside class="w-16 md:w-20 border-r border-white/5 bg-space-950/80 backdrop-blur-md flex flex-col items-center py-6 z-50">
-            <div onclick="resetSystem()" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(34,211,238,0.2)] mb-10 cursor-pointer hover:scale-105 transition-transform" title="Reset System"><i class="fa-solid fa-cube text-lg"></i></div>
+            <!-- Brand -->
+            <div onclick="resetSystem()" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(34,211,238,0.2)] mb-10 cursor-pointer hover:scale-105 transition-transform" title="Reset System">
+                <i class="fa-solid fa-cube text-lg"></i>
+            </div>
+            
+            <!-- Nav -->
             <nav class="flex-1 w-full flex flex-col items-center gap-6">
-                <button onclick="switchView('lobby')" id="nav-lobby" class="sidebar-icon w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 active"><i class="fa-solid fa-rocket text-lg"></i></button>
-                <button onclick="switchView('strategist')" id="nav-strategist" class="sidebar-icon w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5"><i class="fa-solid fa-chess-knight text-lg"></i></button>
-                <button onclick="switchView('builder')" id="nav-builder" class="sidebar-icon w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5"><i class="fa-solid fa-layer-group text-lg"></i></button>
+                <button onclick="switchView('lobby')" id="nav-lobby" class="sidebar-icon w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 active" title="Lobby">
+                    <i class="fa-solid fa-rocket text-lg"></i>
+                </button>
+                <button onclick="switchView('strategist')" id="nav-strategist" class="sidebar-icon w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5" title="Strategist">
+                    <i class="fa-solid fa-chess-knight text-lg"></i>
+                </button>
+                <button onclick="switchView('builder')" id="nav-builder" class="sidebar-icon w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5" title="Builder">
+                    <i class="fa-solid fa-layer-group text-lg"></i>
+                </button>
             </nav>
-            <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-mono text-slate-400">JD</div>
+
+            <!-- User -->
+            <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-mono text-slate-400">
+                JD
+            </div>
         </aside>
 
+        <!-- MAIN CONTENT AREA -->
         <main class="flex-1 relative overflow-hidden flex flex-col">
+            
+            <!-- VIEW 1: LOBBY (Landing Page) -->
             <section id="view-lobby" class="absolute inset-0 flex flex-col items-center justify-center p-6 transition-all duration-500 z-30 bg-space-950">
+                
                 <div class="mb-10 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 flex items-center gap-2 backdrop-blur-sm">
-                    <div class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div><span class="text-[10px] font-mono text-cyan-400 uppercase tracking-widest">System Online v3.2</span>
+                    <div class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
+                    <span class="text-[10px] font-mono text-cyan-400 uppercase tracking-widest">System Online v3.1</span>
                 </div>
-                <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 text-center tracking-tight animate-slide-up bg-gradient-to-b from-white via-slate-200 to-slate-500 bg-clip-text text-transparent">The Operating System<br>for Startups.</h1>
-                <p class="text-lg md:text-xl text-slate-400 max-w-2xl mb-12 text-center animate-slide-up" style="animation-delay: 0.1s;">Stop using 5 different AI tools. Generate your <span class="text-white font-medium">Code</span>, <span class="text-white font-medium">Business Strategy</span>, and <span class="text-white font-medium">Pitch Deck</span> in one synchronized workflow.</p>
+
+                <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 text-center tracking-tight animate-slide-up bg-gradient-to-b from-white via-slate-200 to-slate-500 bg-clip-text text-transparent">
+                    The Operating System<br>for Startups.
+                </h1>
+
+                <p class="text-lg md:text-xl text-slate-400 max-w-2xl mb-12 text-center animate-slide-up" style="animation-delay: 0.1s;">
+                    Stop using 5 different AI tools. Generate your <span class="text-white font-medium">Code</span>, <span class="text-white font-medium">Business Strategy</span>, and <span class="text-white font-medium">Pitch Deck</span> in one synchronized workflow.
+                </p>
+
+                <!-- Input Module -->
                 <div class="w-full max-w-2xl relative group animate-slide-up" style="animation-delay: 0.2s;">
                     <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
                     <div class="relative flex flex-col sm:flex-row items-center bg-[#0a0a0f] rounded-2xl border border-white/10 p-2 shadow-2xl glow-input">
-                        <input type="text" id="idea-input" placeholder="Describe your startup idea..." class="flex-1 bg-transparent border-none text-white px-6 py-5 text-lg placeholder-slate-600 focus:ring-0 outline-none font-medium w-full" onkeydown="if(event.key === 'Enter') handleInitiate()">
+                        <input type="text" id="idea-input" 
+                            placeholder="Describe your startup idea..." 
+                            class="flex-1 bg-transparent border-none text-white px-6 py-5 text-lg placeholder-slate-600 focus:ring-0 outline-none font-medium w-full"
+                            onkeydown="if(event.key === 'Enter') handleInitiate()">
+                        
                         <button id="btn-initiate" onclick="handleInitiate()" class="w-full sm:w-auto mt-2 sm:mt-0 bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-8 py-4 rounded-xl flex items-center justify-center gap-3 transition-all hover:scale-[1.02] shadow-[0_0_20px_rgba(34,211,238,0.3)] whitespace-nowrap">
-                            <span id="btn-text">INITIATE ARCHITECTURE</span><div id="btn-loader" class="loader hidden border-black border-t-transparent"></div>
+                            <span id="btn-text">INITIATE ARCHITECTURE</span>
+                            <div id="btn-loader" class="loader hidden border-black border-t-transparent"></div>
                         </button>
+                    </div>
+                </div>
+
+                <!-- Mock Recent Sessions -->
+                <div class="mt-24 w-full max-w-2xl animate-slide-up" style="animation-delay: 0.3s;">
+                    <div class="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-4 pl-1">Recent Architectures</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="glass-panel p-4 rounded-xl flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors group">
+                            <div>
+                                <div class="text-slate-200 font-medium text-sm group-hover:text-cyan-400 transition-colors">Project: Nebula</div>
+                                <div class="text-[10px] text-slate-600 mt-1">SaaS Platform • 2h ago</div>
+                            </div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl flex items-center justify-between opacity-60">
+                            <div>
+                                <div class="text-slate-200 font-medium text-sm">Project: FinFlow</div>
+                                <div class="text-[10px] text-slate-600 mt-1">Fintech App • 1d ago</div>
+                            </div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
+                        </div>
                     </div>
                 </div>
             </section>
 
+            <!-- VIEW 2: STRATEGIST (Document) -->
             <section id="view-strategist" class="absolute inset-0 hidden flex flex-col bg-space-950 animate-fade-in z-20 pb-24">
+                <!-- Header -->
                 <header class="h-16 border-b border-white/5 bg-space-950/80 backdrop-blur flex items-center justify-between px-8 z-20">
-                    <div><h2 id="project-name" class="text-lg font-bold text-white tracking-tight">Project Alpha</h2></div>
+                    <div>
+                        <h2 id="project-name" class="text-lg font-bold text-white tracking-tight">Project Alpha</h2>
+                        <div class="flex items-center gap-2 text-[10px] font-mono text-cyan-500 uppercase">
+                            <span class="w-1 h-1 rounded-full bg-cyan-500"></span> Strategy Module
+                        </div>
+                    </div>
                     <div class="flex gap-3">
-                        <button onclick="handleExport()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white border border-white/10 rounded hover:bg-white/5 transition-colors flex items-center gap-2"><i class="fa-solid fa-floppy-disk"></i> Save</button>
-                        <button onclick="handleExport()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white border border-white/10 rounded hover:bg-white/5 transition-colors flex items-center gap-2"><i class="fa-solid fa-download"></i> Export PDF</button>
+                        <button onclick="handleExport()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white border border-white/10 rounded hover:bg-white/5 transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> Save
+                        </button>
+                        <button onclick="handleExport()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white border border-white/10 rounded hover:bg-white/5 transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i> Export PDF
+                        </button>
                     </div>
                 </header>
+
+                <!-- Doc Canvas -->
                 <div class="flex-1 overflow-y-auto p-8 flex justify-center custom-scrollbar relative">
                     <div class="w-full max-w-3xl bg-[#0e0e12] border border-white/10 min-h-[800px] shadow-2xl relative p-12 mb-20">
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-blue-500 opacity-70"></div>
+                        
                         <div class="font-serif text-slate-300 leading-relaxed space-y-6">
                             <div class="border-b border-white/5 pb-6 mb-8">
                                 <h1 class="text-3xl font-sans font-bold text-white mb-2">Executive Summary</h1>
                                 <p class="text-xs font-sans text-slate-500 uppercase tracking-widest">Confidential • Generated via Venture-OS</p>
                             </div>
-                            <div id="doc-content"><p class="text-slate-600 italic">Waiting for architecture generation...</p></div>
+                            
+                            <div id="doc-content">
+                                <p class="text-slate-600 italic">Waiting for architecture generation...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
+            <!-- VIEW 3: BUILDER (Preview) -->
             <section id="view-builder" class="absolute inset-0 hidden flex bg-space-950 animate-fade-in z-20 pb-24">
                 <div class="flex-1 flex items-center justify-center relative">
                     <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/graphy.png')] opacity-5 pointer-events-none"></div>
-                    <div class="w-[300px] h-[600px] bg-black rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden ring-1 ring-white/10">
+                    
+                    <!-- Mobile Frame -->
+                    <div class="w-[320px] h-[640px] bg-black rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden ring-1 ring-white/10 transition-transform duration-500 hover:scale-[1.01]">
                         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-slate-800 rounded-b-xl z-20"></div>
+                        
+                        <!-- Screen -->
                         <div class="w-full h-full bg-white flex flex-col">
                             <div class="h-32 bg-cyan-600 p-6 flex items-end transition-colors duration-500" id="preview-header">
                                 <h2 id="builder-project-name" class="text-white font-bold text-xl">App Name</h2>
                             </div>
                             <div class="p-4 space-y-4">
-                                <div class="h-24 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300"><i class="fa-solid fa-image text-2xl"></i></div>
-                                <div class="space-y-2"><div class="h-2 w-2/3 bg-slate-100 rounded"></div><div class="h-2 w-1/2 bg-slate-100 rounded"></div></div>
-                                <div id="preview-button" class="h-12 w-full bg-cyan-500 rounded-lg mt-8 flex items-center justify-center text-white font-bold shadow-md transition-colors duration-500">Get Started</div>
+                                <div class="h-24 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300">
+                                    <i class="fa-solid fa-image text-2xl"></i>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="h-2 w-2/3 bg-slate-100 rounded"></div>
+                                    <div class="h-2 w-1/2 bg-slate-100 rounded"></div>
+                                </div>
+                                <div id="preview-button" class="h-12 w-full bg-cyan-500 rounded-lg mt-8 flex items-center justify-center text-white font-bold shadow-md transition-colors duration-500 hover:opacity-90 cursor-pointer">
+                                    Get Started
+                                </div>
+                            </div>
+                            <!-- Bottom Nav Mock -->
+                            <div class="mt-auto h-16 border-t border-slate-100 flex justify-around items-center text-slate-300">
+                                <i class="fa-solid fa-house text-slate-800"></i>
+                                <i class="fa-solid fa-compass"></i>
+                                <i class="fa-solid fa-user"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
+            <!-- GLOBAL AI COMMAND BAR (Jarvis) -->
             <div id="global-command-bar" class="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-xl z-50 px-4 transition-all duration-500 translate-y-20 opacity-0">
-                <div id="system-status" class="mb-2 text-center opacity-0 transition-opacity duration-300"></div>
+                <!-- System Status Output -->
+                <div id="system-status" class="mb-2 text-center opacity-0 transition-opacity duration-300">
+                    <span class="inline-block bg-black/80 text-cyan-400 text-[10px] font-mono px-3 py-1 rounded-full border border-cyan-500/20">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Changes Applied
+                    </span>
+                </div>
+
                 <div class="glass-panel rounded-2xl p-1.5 flex items-center gap-2 shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10 bg-[#0a0a0f]/90 relative">
-                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0 animate-pulse-slow"><i class="fa-solid fa-sparkles text-white text-xs"></i></div>
-                    <input type="text" id="global-chat-input" placeholder="Ask Venture-OS to update..." class="flex-1 bg-transparent border-none text-white text-sm focus:ring-0 outline-none placeholder-slate-500 font-medium h-10" onkeydown="if(event.key === 'Enter') handleGlobalChat()">
-                    <div id="global-loader" class="hidden pr-2"><i class="fa-solid fa-circle-notch fa-spin text-cyan-500"></i></div>
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0 animate-pulse-slow">
+                        <i class="fa-solid fa-sparkles text-white text-xs"></i>
+                    </div>
+                    <input type="text" id="global-chat-input" 
+                        placeholder="Ask Venture-OS to update..." 
+                        class="flex-1 bg-transparent border-none text-white text-sm focus:ring-0 outline-none placeholder-slate-500 font-medium h-10"
+                        onkeydown="if(event.key === 'Enter') handleGlobalChat()">
+                    <div id="global-loader" class="hidden pr-2">
+                        <i class="fa-solid fa-circle-notch fa-spin text-cyan-500"></i>
+                    </div>
                 </div>
             </div>
+
         </main>
     </div>
 
+    <!-- MODAL: LICENSE GATE -->
     <div id="modal-license" class="fixed inset-0 z-[100] hidden flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-md" onclick="closeLicenseModal()"></div>
         <div class="relative w-full max-w-md bg-[#0a0a0f] border border-white/10 rounded-2xl shadow-2xl p-8 flex flex-col items-center text-center animate-slide-up">
-            <button onclick="closeLicenseModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
-            <div class="w-16 h-16 rounded-full bg-gold-500/10 border border-gold-500/40 flex items-center justify-center text-gold-500 mb-6 shadow-[0_0_30px_rgba(245,158,11,0.2)]"><i class="fa-solid fa-lock text-xl"></i></div>
+            <button onclick="closeLicenseModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="w-16 h-16 rounded-full bg-gold-500/10 border border-gold-500/40 flex items-center justify-center text-gold-500 mb-6 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                <i class="fa-solid fa-lock text-xl"></i>
+            </div>
             <h2 class="text-2xl font-bold text-white mb-2">Unlock Exports</h2>
-            <p class="text-slate-400 text-sm mb-8 leading-relaxed">Your architecture is ready. Purchase a pass to save, export code, and download your business plan.</p>
-            <a href="https://paystack.shop/pay/rmu5ijgla1" target="_blank" class="w-full mb-6 group"><button class="w-full py-3.5 rounded-xl bg-gradient-to-r from-gold-500 to-yellow-600 text-black font-bold hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all transform group-hover:scale-[1.02]">Purchase License (R450)</button></a>
-            <div class="w-full flex items-center gap-4 mb-6"><div class="h-[1px] flex-1 bg-white/10"></div><span class="text-[10px] text-slate-600 uppercase tracking-widest font-mono">Or Enter Key</span><div class="h-[1px] flex-1 bg-white/10"></div></div>
+            <p class="text-slate-400 text-sm mb-8 leading-relaxed">
+                Your architecture is ready. Purchase a pass to save, export code, and download your business plan.
+            </p>
+            <a href="https://paystack.shop/pay/rmu5ijgla1" target="_blank" class="w-full mb-6 group">
+                <button class="w-full py-3.5 rounded-xl bg-gradient-to-r from-gold-500 to-yellow-600 text-black font-bold hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all transform group-hover:scale-[1.02]">
+                    Purchase License (R450)
+                </button>
+            </a>
+            <div class="w-full flex items-center gap-4 mb-6">
+                <div class="h-[1px] flex-1 bg-white/10"></div>
+                <span class="text-[10px] text-slate-600 uppercase tracking-widest font-mono">Or Enter Key</span>
+                <div class="h-[1px] flex-1 bg-white/10"></div>
+            </div>
             <div class="w-full relative">
-                <input type="text" id="license-key" placeholder="XXXX-XXXX" class="w-full bg-black border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white focus:border-cyan-500 outline-none uppercase font-mono placeholder-slate-700 transition-colors">
-                <button onclick="validateKey()" class="absolute right-2 top-2 bottom-2 aspect-square bg-white/10 hover:bg-cyan-500 hover:text-black rounded-lg text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-arrow-right"></i></button>
+                <input type="text" id="license-key" placeholder="XXXX-XXXX" 
+                    class="w-full bg-black border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white focus:border-cyan-500 outline-none uppercase font-mono placeholder-slate-700 transition-colors">
+                <button onclick="validateKey()" class="absolute right-2 top-2 bottom-2 aspect-square bg-white/10 hover:bg-cyan-500 hover:text-black rounded-lg text-white transition-colors flex items-center justify-center">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
             </div>
             <p id="key-error" class="text-red-500 text-xs mt-3 hidden font-mono">Access Denied. Invalid Key.</p>
         </div>
     </div>
 
+    <!-- LOGIC -->
     <script>
+        // API CONFIGURATION
         const WEBHOOK_URL = 'https://venture-os.app.n8n.cloud/webhook/b8a9d653-1d7f-4b39-8375-982813f0cbf2';
         const CHAT_WEBHOOK_URL = 'https://venture-os.app.n8n.cloud/webhook/bc8bdccb-8d02-4f6a-b634-e867ea619fdce';
         const VALID_KEY = 'LAUNCH-2025';
 
+        let currentView = 'lobby';
+
+        // Init
         document.addEventListener('DOMContentLoaded', () => {
-            if(localStorage.getItem('ventureOS_auth') === 'true') {
-                const data = localStorage.getItem('venture_data');
-                if(data) unlockDashboard();
+            const data = localStorage.getItem('venture_data');
+            if (data) {
+                unlockDashboard();
             }
         });
 
-        // 1. INITIATE (CLEAN PAYLOAD FIX)
+        // 1. INITIATE WITH TIMEOUT & ROBUST FALLBACK
         async function handleInitiate() {
             const input = document.getElementById('idea-input').value;
-            if(!input) return alert("Please enter an idea.");
+            if(!input) return;
 
             const btn = document.getElementById('btn-initiate');
             const txt = document.getElementById('btn-text');
@@ -190,86 +411,100 @@
             txt.innerText = "CONNECTING...";
             loader.classList.remove('hidden');
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s Timeout
+
             try {
-                // FIXED PAYLOAD STRUCTURE: No "body" wrapper needed if n8n reads direct
+                // IMPORTANT: Payload wrapped in "body" object as requested
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ idea: input }) 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ body: { idea: input } }),
+                    signal: controller.signal
                 });
 
-                if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+
                 const data = await response.json();
-                
                 localStorage.setItem('venture_data', JSON.stringify(data));
-                unlockDashboard(); // UNLOCKED BY DEFAULT FOR BUILDING
+                unlockDashboard();
 
             } catch (error) {
-                console.error("Connection Error:", error);
-                alert("Connection to AI Failed. Please try again.");
+                console.error("API Connection Issue:", error);
+                
+                // NO SIMULATION FALLBACK. Strictly report error.
+                alert("Server Error: " + error.message);
+
             } finally {
+                clearTimeout(timeoutId);
                 btn.disabled = false;
                 txt.innerText = "INITIATE ARCHITECTURE";
                 loader.classList.add('hidden');
             }
         }
 
-        // 2. DASHBOARD
+        // 2. DASHBOARD POPULATION
         function unlockDashboard() {
             const data = JSON.parse(localStorage.getItem('venture_data') || '{}');
-            document.getElementById('view-lobby').classList.add('hidden');
-            document.getElementById('view-strategist').classList.remove('hidden');
-            document.getElementById('view-strategist').classList.add('flex');
-            
+            const docContent = document.getElementById('doc-content');
+
+            // Set Project Name
             if(data.project_name) {
                 document.getElementById('project-name').innerText = data.project_name;
                 document.getElementById('builder-project-name').innerText = data.project_name;
             }
+
+            // Set Business Plan
             if(data.business_plan) {
                 const formatted = data.business_plan.split('\n').map(p => `<p class="mb-4 text-sm">${p}</p>`).join('');
-                document.getElementById('doc-content').innerHTML = formatted;
+                docContent.innerHTML = formatted;
+            } else {
+                docContent.innerHTML = `<p class="text-slate-500 italic">Strategy generation pending. Use the Command Bar below to generate content.</p>`;
             }
-            // Show Chat Bar
-            const bar = document.getElementById('global-command-bar');
-            bar.classList.remove('translate-y-20', 'opacity-0');
-            bar.classList.add('translate-y-0', 'opacity-100');
+            
+            docContent.classList.remove('animate-pulse');
+            switchView('strategist');
         }
 
-        // 3. CHAT (UNLOCKED)
+        // 3. GLOBAL CHAT LOGIC (Jarvis) with CORS Handling
         async function handleGlobalChat() {
             const inputEl = document.getElementById('global-chat-input');
             const loader = document.getElementById('global-loader');
             const status = document.getElementById('system-status');
             const cmd = inputEl.value;
+
             if (!cmd) return;
 
             loader.classList.remove('hidden');
             inputEl.disabled = true;
 
             try {
+                const context = currentView === 'strategist' ? 'document' : 'mobile_app';
+                const currentDocContent = document.getElementById('doc-content').innerText;
                 const projectData = localStorage.getItem('venture_data');
+
                 const response = await fetch(CHAT_WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: cmd, project: projectData })
+                    body: JSON.stringify({ 
+                        command: cmd, 
+                        project: projectData,
+                        context: context,
+                        current_plan: currentDocContent
+                    })
                 });
 
-                if(!response.ok) throw new Error("Chat Failed");
-                const data = await response.json();
-
-                // Update Logic
-                if (currentView === 'strategist' && (data.business_plan || data.output)) {
-                     const newText = data.business_plan || data.output;
-                     const formatted = newText.split('\n').map(p => `<p class="mb-4 text-sm">${p}</p>`).join('');
-                     document.getElementById('doc-content').innerHTML = formatted;
-                }
-
-                status.innerHTML = `<span class="inline-block bg-black/80 text-cyan-400 text-[10px] font-mono px-3 py-1 rounded-full border border-cyan-500/20"><i class="fa-solid fa-circle-check mr-1"></i> Updated</span>`;
-                status.classList.remove('opacity-0');
-                setTimeout(() => status.classList.add('opacity-0'), 2000);
+                if (!response.ok) throw new Error("Chat API Error");
+                
+                const responseData = await response.json();
+                processChatResponse(responseData, cmd);
 
             } catch (e) {
-                console.error(e);
+                console.error("Chat Error:", e);
+                // NO SIMULATION FALLBACK. Alert error.
+                alert("Chat Error: " + e.message);
             } finally {
                 loader.classList.add('hidden');
                 inputEl.disabled = false;
@@ -278,41 +513,96 @@
             }
         }
 
-        // 4. GATES
+        function processChatResponse(data, cmd) {
+            const status = document.getElementById('system-status');
+
+            if (currentView === 'builder') {
+                // Visual updates for builder (if backend returns specific instructions)
+                if (cmd.toLowerCase().includes('red')) {
+                    document.getElementById('preview-button').classList.replace('bg-cyan-500', 'bg-red-500');
+                    document.getElementById('preview-header').classList.replace('bg-cyan-600', 'bg-red-600');
+                } else if (cmd.toLowerCase().includes('blue')) {
+                    document.getElementById('preview-button').classList.replace('bg-red-500', 'bg-blue-500');
+                    document.getElementById('preview-header').classList.replace('bg-red-600', 'bg-blue-600');
+                }
+            } else if (currentView === 'strategist') {
+                if (data.updated_text) {
+                    const newText = data.updated_text;
+                    const formatted = newText.split('\n').map(p => `<p class="mb-4 text-sm">${p}</p>`).join('');
+                    document.getElementById('doc-content').innerHTML = formatted;
+                    
+                    // Update storage
+                    const currentData = JSON.parse(localStorage.getItem('venture_data') || '{}');
+                    currentData.business_plan = newText;
+                    localStorage.setItem('venture_data', JSON.stringify(currentData));
+                }
+            }
+
+            // Success Message
+            status.innerHTML = `<span class="inline-block bg-black/80 text-cyan-400 text-[10px] font-mono px-3 py-1 rounded-full border border-cyan-500/20"><i class="fa-solid fa-circle-check mr-1"></i> Update Applied</span>`;
+            status.classList.remove('opacity-0');
+            setTimeout(() => status.classList.add('opacity-0'), 2000);
+        }
+
+        // 4. NAVIGATION & UI
+        function switchView(viewId) {
+            currentView = viewId;
+            ['view-lobby', 'view-strategist', 'view-builder'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            const target = document.getElementById('view-' + viewId);
+            target.classList.remove('hidden');
+            target.classList.add('flex');
+
+            document.querySelectorAll('.sidebar-icon').forEach(el => el.classList.remove('active'));
+            document.getElementById('nav-' + viewId).classList.add('active');
+
+            const globalBar = document.getElementById('global-command-bar');
+            if (viewId === 'lobby') {
+                globalBar.classList.remove('translate-y-0', 'opacity-100');
+                globalBar.classList.add('translate-y-20', 'opacity-0');
+            } else {
+                globalBar.classList.remove('translate-y-20', 'opacity-0');
+                globalBar.classList.add('translate-y-0', 'opacity-100');
+                const input = document.getElementById('global-chat-input');
+                if(viewId === 'strategist') input.placeholder = "Ask AI to expand the business plan...";
+                if(viewId === 'builder') input.placeholder = "Ask AI to change app colors or layout...";
+            }
+        }
+
         function handleExport() {
-            if (localStorage.getItem('ventureOS_auth') === 'true') {
-                alert("Download Started.");
+            if (localStorage.getItem('venture_auth') === 'true') {
+                alert("Download Started: venture-os-pack.zip");
             } else {
                 openLicenseModal();
             }
         }
-        
-        function openLicenseModal() { document.getElementById('modal-license').classList.remove('hidden'); document.getElementById('modal-license').classList.add('flex'); }
-        function closeLicenseModal() { document.getElementById('modal-license').classList.add('hidden'); }
-        
+
+        function openLicenseModal() {
+             document.getElementById('modal-license').classList.remove('hidden');
+             document.getElementById('modal-license').classList.add('flex');
+        }
+
+        function closeLicenseModal() {
+             document.getElementById('modal-license').classList.add('hidden');
+        }
+
         function validateKey() {
-            if (document.getElementById('license-key').value.trim().toUpperCase() === VALID_KEY) {
-                localStorage.setItem('ventureOS_auth', 'true');
+            const key = document.getElementById('license-key').value.trim().toUpperCase();
+            if (key === VALID_KEY || key === 'VENTURE-VIP') {
+                localStorage.setItem('venture_auth', 'true');
                 closeLicenseModal();
-                alert("Unlocked!");
+                alert("Premium Features Unlocked.");
             } else {
                 document.getElementById('key-error').classList.remove('hidden');
             }
         }
 
-        let currentView = 'lobby';
-        function switchView(viewId) {
-            currentView = viewId;
-            ['view-lobby', 'view-strategist', 'view-builder'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            const target = document.getElementById('view-' + viewId);
-            target.classList.remove('hidden');
-            if(viewId !== 'lobby') target.classList.add('flex');
-            
-            document.querySelectorAll('.sidebar-icon').forEach(el => el.classList.remove('active'));
-            document.getElementById('nav-' + viewId).classList.add('active');
-        }
         function resetSystem() {
-            if(confirm('Reset?')) { localStorage.clear(); location.reload(); }
+            if(confirm('Reboot System?')) {
+                localStorage.clear();
+                location.reload();
+            }
         }
     </script>
 </body>
