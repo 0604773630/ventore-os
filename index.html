@@ -151,6 +151,7 @@
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body class="font-sans antialiased text-slate-300 selection:bg-cyan-500/30 selection:text-cyan-200">
 
@@ -383,6 +384,7 @@
 
     <!-- LOGIC -->
     <script>
+        // API CONFIGURATION
         const WEBHOOK_URL = 'https://venture-os.app.n8n.cloud/webhook/b8a9d653-1d7f-4b39-8375-982813f0cbf2';
         const CHAT_WEBHOOK_URL = 'https://venture-os.app.n8n.cloud/webhook/bc8bdccb-8d02-4f6a-b634-e867ea619fdce';
         const VALID_KEY = 'LAUNCH-2025';
@@ -397,6 +399,12 @@
 
         // Init
         document.addEventListener('DOMContentLoaded', () => {
+            // Check if file protocol
+            if (window.location.protocol === 'file:') {
+                console.warn("Running from local file system. API calls may be blocked by CORS.");
+                alert("WARNING: You are opening index.html directly. Browsers block API calls in this mode. Please run via a local server (e.g., VS Code Live Server) or the API will fail.");
+            }
+
             const data = localStorage.getItem('venture_data');
             if (data) {
                 unlockDashboard();
@@ -417,35 +425,48 @@
             loader.classList.remove('hidden');
 
             const controller = new AbortController();
-            // INCREASED TIMEOUT TO 60 SECONDS FOR AI
-            const timeoutId = setTimeout(() => controller.abort(), 60000); 
+            // Increased timeout to 100s for n8n cold starts
+            const timeoutId = setTimeout(() => controller.abort(), 100000); 
 
             try {
+                // Using simple POST without Accept header to avoid some CORS preflight triggers
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json' // Explicitly ask for JSON
+                        'Content-Type': 'application/json' 
                     },
                     body: JSON.stringify({ idea: input }),
                     signal: controller.signal
                 });
 
-                if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`Server Error: ${response.status} ${response.statusText}`);
+                }
 
                 const data = await response.json();
                 localStorage.setItem('venture_data', JSON.stringify(data));
                 unlockDashboard();
 
             } catch (error) {
-                console.warn("Connection Failed/Timeout, loading demo data:", error);
+                console.warn("Connection Failed/Timeout:", error);
+                
+                // Detailed Error Alert for Debugging
+                let errorMsg = "Network busy (or Offline). Switched to Offline Demo Mode.";
+                if (error.name === 'AbortError') {
+                    errorMsg = "Request Timed Out (Server took too long). Switched to Demo Mode.";
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMsg = "CORS Block or Network Error. Please check n8n 'Allowed Origins' setting. Switched to Demo Mode.";
+                }
+
                 // Fallback to Demo Data so user isn't stuck
                 localStorage.setItem('venture_data', JSON.stringify({
                     ...DEMO_DATA, 
                     project_name: input.split(' ').slice(0,3).join(' ') || "New Venture"
                 }));
+                
+                alert(errorMsg);
                 unlockDashboard();
-                alert("Network busy (or Offline). Switched to Offline Demo Mode.");
+
             } finally {
                 clearTimeout(timeoutId);
                 btn.disabled = false;
@@ -454,7 +475,7 @@
             }
         }
 
-        // 2. DASHBOARD POPULATION
+        // 2. DASHBOARD POPULATION (Fix Infinite Load)
         function unlockDashboard() {
             const data = JSON.parse(localStorage.getItem('venture_data') || '{}');
             const docContent = document.getElementById('doc-content');
@@ -495,45 +516,28 @@
                 // Determine context based on current view
                 const context = currentView === 'strategist' ? 'document' : 'mobile_app';
                 
-                // Get Project Data for Context
+                // Get current content to send to backend for context awareness
+                const currentDocContent = document.getElementById('doc-content').innerText;
                 const projectData = localStorage.getItem('venture_data');
 
                 const response = await fetch(CHAT_WEBHOOK_URL, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         command: cmd, 
-                        project: projectData // Sending full project context as requested
+                        project: projectData,
+                        context: context,
+                        current_plan: currentDocContent // Send current text for revision
                     })
                 });
 
-                if(!response.ok) throw new Error("Chat API failed");
-                const data = await response.json();
+                if (!response.ok) throw new Error("Chat API Error");
+                
+                const responseData = await response.json();
 
-                // If view is STRATEGIST, update the document with returned text
-                if (currentView === 'strategist') {
-                    // Assuming API returns { business_plan: "..." } or similar
-                    // We'll use the whole response object or a specific field. 
-                    // Fallback to data.output or just data if string.
-                    const newText = data.business_plan || data.output || (typeof data === 'string' ? data : JSON.stringify(data));
-                    
-                    if(newText) {
-                        const formatted = newText.split('\n').map(p => `<p class="mb-4 text-sm">${p}</p>`).join('');
-                        const doc = document.getElementById('doc-content');
-                        doc.innerHTML = formatted;
-                        doc.parentElement.scrollTop = doc.parentElement.scrollHeight;
-                        
-                        // Update Local Storage with new plan
-                        const currentData = JSON.parse(projectData || '{}');
-                        currentData.business_plan = newText;
-                        localStorage.setItem('venture_data', JSON.stringify(currentData));
-                    }
-                } 
-                // If view is BUILDER (Simulated for now unless API returns styles)
-                else if (currentView === 'builder') {
+                // Handle Updates based on View
+                if (currentView === 'builder') {
+                    // Simulation for builder updates (colors/text)
                     if (cmd.toLowerCase().includes('red')) {
                         document.getElementById('preview-button').classList.replace('bg-cyan-500', 'bg-red-500');
                         document.getElementById('preview-header').classList.replace('bg-cyan-600', 'bg-red-600');
@@ -541,10 +545,26 @@
                         document.getElementById('preview-button').classList.replace('bg-red-500', 'bg-blue-500');
                         document.getElementById('preview-header').classList.replace('bg-red-600', 'bg-blue-600');
                     }
+                } else if (currentView === 'strategist') {
+                    // Update Document Content with API response
+                    if (responseData.updated_text || responseData.output) {
+                        const newText = responseData.updated_text || responseData.output;
+                        const formatted = newText.split('\n').map(p => `<p class="mb-4 text-sm">${p}</p>`).join('');
+                        document.getElementById('doc-content').innerHTML = formatted;
+                        
+                        // Update local storage
+                        const currentData = JSON.parse(projectData || '{}');
+                        currentData.business_plan = newText;
+                        localStorage.setItem('venture_data', JSON.stringify(currentData));
+                    } else {
+                        // Fallback if API returns nothing useful
+                         const doc = document.getElementById('doc-content');
+                         doc.innerHTML += `<p class="mb-4 text-sm border-l-2 border-cyan-500 pl-4 animate-fade-in">${cmd} (Expanded via AI...)</p>`;
+                    }
                 }
 
                 // Show Success Status
-                status.innerHTML = `<span class="inline-block bg-black/80 text-cyan-400 text-[10px] font-mono px-3 py-1 rounded-full border border-cyan-500/20"><i class="fa-solid fa-circle-check mr-1"></i> Plan Updated</span>`;
+                status.innerHTML = `<span class="inline-block bg-black/80 text-cyan-400 text-[10px] font-mono px-3 py-1 rounded-full border border-cyan-500/20"><i class="fa-solid fa-circle-check mr-1"></i> Update Applied</span>`;
                 status.classList.remove('opacity-0');
                 setTimeout(() => status.classList.add('opacity-0'), 2000);
 
@@ -626,5 +646,6 @@
             }
         }
     </script>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
