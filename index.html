@@ -176,7 +176,8 @@
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0"
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
 }
 </script>
@@ -627,7 +628,7 @@
     <script type="module">
         import { GoogleGenAI, Type } from "@google/genai";
 
-        // Initialize Gemini
+        // Initialize Gemini securely - process.env.API_KEY is injected at build time
         const apiKey = process.env.API_KEY;
         const ai = new GoogleGenAI({ apiKey });
 
@@ -783,7 +784,7 @@
             loader.classList.remove('hidden');
 
             try {
-                // Extended Schema for Roadmap
+                // Extended Schema for Roadmap and Pricing
                 const schema = {
                     type: Type.OBJECT,
                     properties: {
@@ -791,6 +792,17 @@
                         business_plan: { type: Type.STRING, description: "Markdown formatted detailed business plan including executive summary, market analysis, and revenue model." },
                         tagline: { type: Type.STRING },
                         primary_color: { type: Type.STRING, description: "Hex code" },
+                        pricing_plan: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    name: { type: Type.STRING, description: "Tier name e.g. Starter" },
+                                    price: { type: Type.STRING, description: "e.g. $29/mo" },
+                                    features: { type: Type.ARRAY, items: { type: Type.STRING } }
+                                }
+                            }
+                        },
                         roadmap: {
                             type: Type.ARRAY,
                             items: {
@@ -803,13 +815,21 @@
                             }
                         }
                     },
-                    required: ["project_name", "business_plan", "tagline", "primary_color", "roadmap"]
+                    required: ["project_name", "business_plan", "tagline", "primary_color", "pricing_plan", "roadmap"]
                 };
 
                 const response = await ai.models.generateContent({
                     model: 'gemini-3-pro-preview',
-                    contents: `You are Venture-OS, a world-class startup architect. Analyze this idea and generate a complete architecture with a detailed roadmap from inception until revenue ready: "${input}". 
-                    Create a sophisticated, realistic business plan and technical identity. The roadmap must be complete and comprehensive.`,
+                    contents: `You are Venture-OS, a world-class startup architect. Analyze this idea and generate a complete architecture with a detailed roadmap and pricing strategy: "${input}". 
+                    Create a sophisticated, realistic business plan, a 3-tier pricing strategy, and technical identity. The roadmap must be complete and comprehensive.
+                    
+                    For the Pricing Plan:
+                    - Create a Deserving Subscription Fee model.
+                    - Ensure the prices are Reasonable for the services offered by this specific startup idea.
+                    - Tier 1: Entry/Hobbyist.
+                    - Tier 2: Professional/Growth (Recommended).
+                    - Tier 3: Enterprise/Scale.
+                    `,
                     config: {
                         responseMimeType: "application/json",
                         responseSchema: schema,
@@ -862,6 +882,33 @@
                     .replace(/\n/gim, '<br>');
                 
                 docContent.innerHTML = formatted;
+            }
+            
+            // Render Pricing Plan
+            if (data.pricing_plan) {
+                const priceContainerHtml = `
+                    <div class="mt-12 border-t border-slate-200 dark:border-white/10 pt-8">
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Strategic Pricing Model</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            ${data.pricing_plan.map((plan, i) => `
+                                <div class="relative bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-6 flex flex-col hover:border-cyan-500/50 transition-colors ${i === 1 ? 'ring-1 ring-cyan-500/30' : ''}">
+                                    ${i === 1 ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Recommended</div>' : ''}
+                                    <h4 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">${plan.name}</h4>
+                                    <div class="text-3xl font-bold text-slate-900 dark:text-white mb-6">${plan.price}</div>
+                                    <ul class="space-y-3 mb-6 flex-1">
+                                        ${plan.features.map(f => `
+                                            <li class="flex gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                                <i class="fa-solid fa-check text-cyan-500 mt-0.5"></i> <span>${f}</span>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                    <button class="w-full py-2 rounded-lg bg-slate-100 dark:bg-white/10 hover:bg-cyan-500 hover:text-white text-slate-900 dark:text-white text-xs font-bold transition-colors">Select Plan</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                docContent.insertAdjacentHTML('beforeend', priceContainerHtml);
             }
 
             // Render Roadmap
