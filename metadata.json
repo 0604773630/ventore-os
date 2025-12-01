@@ -1,5 +1,8 @@
 {
+  "requestFramePermissions": [
+    "microphone",
+    "display-capture"
+  ],
   "name": "Venture-OS",
-  "description": "The world's first Synchronized Startup Architect. Generates complete investor-ready architecture packs from a single idea using Gemini 2.5.",
-  "requestFramePermissions": []
+  "description": ""
 }
