@@ -854,9 +854,7 @@
                     required: ["project_name", "business_plan", "tagline", "primary_color", "pricing_plan", "roadmap"]
                 };
 
-                const response = await ai.models.generateContent({
-                    model: 'gemini-3-pro-preview',
-                    contents: `You are Venture-OS, a world-class startup architect for the South African market. Analyze this idea and generate a complete architecture with a detailed roadmap and pricing strategy: "${input}". 
+                const systemPrompt = `You are Venture-OS, a world-class startup architect for the South African market. Analyze this idea and generate a complete architecture with a detailed roadmap and pricing strategy: "${input}". 
                     Create a sophisticated, realistic business plan, a 3-tier pricing strategy, and technical identity. The roadmap must be complete and comprehensive.
                     
                     For the Pricing Plan:
@@ -866,15 +864,44 @@
                     - Tier 1: Hustler (Entry level).
                     - Tier 2: Founder (Growth level - Recommended).
                     - Tier 3: Empire (Scale level).
-                    `,
-                    config: {
-                        responseMimeType: "application/json",
-                        responseSchema: schema,
-                        thinkingConfig: { thinkingBudget: 32768 }
-                    }
-                });
+                    `;
 
-                const data = JSON.parse(response.text);
+                let response;
+                let data;
+
+                // ATTEMPT 1: Try Gemini 3 Pro (Thinking Model)
+                try {
+                    console.log("Attempting generation with gemini-3-pro-preview...");
+                    response = await ai.models.generateContent({
+                        model: 'gemini-3-pro-preview',
+                        contents: systemPrompt,
+                        config: {
+                            responseMimeType: "application/json",
+                            responseSchema: schema,
+                            thinkingConfig: { thinkingBudget: 16000 }
+                        }
+                    });
+                    data = JSON.parse(response.text);
+                } catch (proError) {
+                    console.warn("Gemini 3 Pro failed. Fallback to Flash initiated.", proError);
+                    
+                    // ATTEMPT 2: Fallback to Gemini 2.5 Flash (Faster, no thinking)
+                    try {
+                        txt.innerText = "RETRYING...";
+                         response = await ai.models.generateContent({
+                            model: 'gemini-2.5-flash',
+                            contents: systemPrompt,
+                            config: {
+                                responseMimeType: "application/json",
+                                responseSchema: schema
+                            }
+                        });
+                        data = JSON.parse(response.text);
+                    } catch (flashError) {
+                        // If both fail, throw the original error to alert user
+                         throw new Error(`Model Generation Failed. Pro Error: ${proError.message}. Flash Error: ${flashError.message}`);
+                    }
+                }
                 
                 // Initialize arrays if missing to prevent map errors
                 if (!data.pricing_plan) data.pricing_plan = [];
@@ -888,8 +915,8 @@
                 unlockDashboard();
 
             } catch (error) {
-                console.error("Gemini Error:", error);
-                alert("Architecture generation failed. Please check console for details.");
+                console.error("Gemini Critical Error:", error);
+                alert(`Architecture generation failed.\n\nReason: ${error.message}\n\nTip: Check if your API Key has access to 'gemini-3-pro-preview' or 'gemini-2.5-flash' in Google AI Studio.`);
             } finally {
                 btn.disabled = false;
                 txt.innerText = "INITIATE";
@@ -1395,3 +1422,5 @@ ${(data.pricing_plan || []).map(p => `${p.name}: ${p.price}\nFeatures: ${p.featu
         }
     </script>
 <script type="module" src="/index.tsx"></script>
+</body>
+</html>
